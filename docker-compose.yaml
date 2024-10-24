@@ -6,15 +6,38 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGO_URI=${MONGO_URI}
+      - MONGO_URI=mongodb://mongo:27017/mydb
     volumes:
       - ./client:/app/client
     command: python3 main.py
+    depends_on:
+      mongo:
+        condition: service_healthy
 
   socket_server:
     build: .
     environment:
-      - MONGO_URI=${MONGO_URI}
+      - MONGO_URI=mongodb://mongo:27017/mydb
     volumes:
       - ./client:/app/client
     command: python3 socket_server.py
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mongo-data:
+    driver: local
